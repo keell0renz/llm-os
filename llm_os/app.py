@@ -1,5 +1,10 @@
 import chainlit as cl
 
+# On chat start: create a jupyter notebook.
+# On each message: determine agent info state, retrieve chat history, stream, update chat history.
+# On stop: stop streaming, stop jupyter notebook.
+# On chat end: close the jupyter notebook.
+
 
 @cl.on_message
 async def main(message: cl.Message):
