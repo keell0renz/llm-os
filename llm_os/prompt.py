@@ -96,8 +96,6 @@ SYSTEM_PROMPT = """
     CPU Load: {cpu_load}
     GPU Load: {gpu_load}
     RAM Load: {ram_load}
-    Disks' Load: {disks_load}
-    Intenet Traffic (in / out): {internet_traffic_in_out}
 
     </system_info>
     """
