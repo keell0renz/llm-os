@@ -8,9 +8,9 @@ from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_anthropic import ChatAnthropic
 from langgraph.graph import END, StateGraph
 
-from llm_os.prompt import SYSTEM_PROMPT
-from llm_os.parser import ToolParser
-from llm_os.info import *
+from .prompt import SYSTEM_PROMPT
+from .parser import ToolParser
+from .info import *
 
 
 class AgentState(TypedDict):

@@ -5,7 +5,7 @@ from langchain_core.messages import AIMessage, MessageLikeRepresentation
 
 from langcode.jupyter import Jupyter
 
-from llm_os.model import runnable
+from .model import runnable
 
 load_dotenv(".env")
 
