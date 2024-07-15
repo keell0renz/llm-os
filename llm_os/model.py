@@ -53,13 +53,16 @@ def model(state: AgentState):
     return {"messages": [response]}
 
 
-def executor(state: AgentState):
+async def executor(state: AgentState):
     xml = ToolParser.extract_and_parse_xml(state["messages"][-1].content)  # type: ignore
     jupyter: Jupyter = cl.user_session.get("jupyter")  # type: ignore
 
     for call in xml:
         if call.get("python", None):
-            result = jupyter.run_cell(call["python"], timeout=600000)
+            async with cl.Step(name="Jupyter Notebook") as step:
+                step.input = call["python"]
+                result = jupyter.run_cell(call["python"], timeout=600000)
+                step.output = result.text
 
             images = []
 
