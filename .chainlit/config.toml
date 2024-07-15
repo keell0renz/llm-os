@@ -43,8 +43,7 @@ latex = false
 
 [UI]
 # Name of the app and chatbot.
-name = "Code Agent"
-default_collapse_content = false
+name = "Chatbot"
 
 # Show the readme while the thread is empty.
 show_readme_as_default = true
@@ -53,10 +52,10 @@ show_readme_as_default = true
 # description = ""
 
 # Large size content are by default collapsed for a cleaner ui
-default_collapse_content = true
+default_collapse_content = false
 
 # The default value for the expand messages settings.
-default_expand_messages = false
+default_expand_messages = true
 
 # Hide the chain of thought details from the user in the UI.
 hide_cot = false
