@@ -1,22 +1,24 @@
 from typing import TypedDict, Annotated, Sequence
 import operator
 
+import chainlit as cl
+
 from langcode.jupyter import Jupyter
 
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_anthropic import ChatAnthropic
 from langgraph.graph import END, StateGraph
+from langgraph.graph.graph import CompiledGraph
 
-from .prompt import SYSTEM_PROMPT
-from .parser import ToolParser
-from .info import *
+from prompt import SYSTEM_PROMPT
+from xml_parser import ToolParser
+from info import *
 
 
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], operator.add]
     temperature: int
-    jupyter: Jupyter
 
 
 prompt = ChatPromptTemplate.from_messages(
@@ -53,10 +55,11 @@ def model(state: AgentState):
 
 def executor(state: AgentState):
     xml = ToolParser.extract_and_parse_xml(state["messages"][-1].content)  # type: ignore
+    jupyter: Jupyter = cl.user_session.get("jupyter")  # type: ignore
 
     for call in xml:
         if call.get("python", None):
-            result = state["jupyter"].run_cell(call["python"], timeout=600000)
+            result = jupyter.run_cell(call["python"], timeout=600000)
 
             images = []
 
@@ -88,14 +91,15 @@ def router(state: AgentState):
         return "end"
 
 
-graph = StateGraph(AgentState)
+def create_state_graph() -> CompiledGraph:
+    graph = StateGraph(AgentState)
 
-graph.add_node("model", model)
-graph.add_node("executor", executor)
+    graph.add_node("model", model)
+    graph.add_node("executor", executor)
 
-graph.add_conditional_edges("model", router, {"execute": "executor", "end": END})
-graph.add_edge("executor", "model")
+    graph.add_conditional_edges("model", router, {"execute": "executor", "end": END})
+    graph.add_edge("executor", "model")
 
-graph.set_entry_point("model")
+    graph.set_entry_point("model")
 
-runnable = graph.compile()
+    return graph.compile()

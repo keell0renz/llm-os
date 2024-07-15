@@ -82,5 +82,3 @@ def get_ram_load() -> str:
     Returns the current RAM load as a string percentage.
     """
     return f"{psutil.virtual_memory().percent}%"
-
-print(get_ram_load())

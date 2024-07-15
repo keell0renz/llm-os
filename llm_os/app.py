@@ -1,11 +1,12 @@
 from dotenv import load_dotenv
 import chainlit as cl
 
-from langchain_core.messages import AIMessage, MessageLikeRepresentation
+from langchain_core.messages import AIMessage, HumanMessage, MessageLikeRepresentation
+from langgraph.graph.graph import CompiledGraph
 
 from langcode.jupyter import Jupyter
 
-from .model import runnable
+from model import create_state_graph
 
 load_dotenv(".env")
 
@@ -14,9 +15,11 @@ load_dotenv(".env")
 async def on_chat_start():
     messages: list[MessageLikeRepresentation] = []
     jupyter: Jupyter = Jupyter.local() # type: ignore (later fix the JupyterLocal != Jupyter issue.)
+    runnable: CompiledGraph = create_state_graph()
 
     cl.user_session.set("messages", messages)
     cl.user_session.set("jupyter", jupyter)
+    cl.user_session.set("runnable", runnable)
 
 @cl.on_stop
 async def on_stop():
@@ -32,33 +35,19 @@ async def on_chat_end():
 @cl.on_message
 async def main(message: cl.Message):
     messages: list[MessageLikeRepresentation] = cl.user_session.get("messages") # type: ignore
-    jupyter: Jupyter = cl.user_session.get("jupyter")  # type: ignore
+    runnable: CompiledGraph = cl.user_session.get("runnable") # type: ignore
 
     inputs = {
         "messages": messages,
         "temperature": 0.5,
-        "jupyter": jupyter
     }
+
+    messages.append(HumanMessage(content=message.content))
 
     response = cl.Message(content="")
 
     async for output in runnable.astream_log(inputs, include_types=["llm"]):
         for op in output.ops:
-            # if op["path"] == "/streamed_output/-":
-            #     if op["value"].get("executor", None):
-            #         for message in op["value"]["executor"]["messages"]:
-            #             print("\n\n<output>")
-            #             print(message.content[0]["text"])
-
-            #             for image_base64_obj in message.content[1:]:
-            #                 image_base64_str = image_base64_obj["image_url"]["url"].split(
-            #                     ","
-            #                 )[1]
-            #                 image_data = base64.b64decode(image_base64_str)
-            #                 display(Image(data=image_data))
-
-            #             print("</output>\n")
-
             if op["path"].startswith("/logs/") and op["path"].endswith(
                 "/streamed_output/-"
             ):

@@ -94,7 +94,6 @@ SYSTEM_PROMPT = """
     User's email: {users_email}
     Access to The Internet: {access_to_the_internet}
     CPU Load: {cpu_load}
-    GPU Load: {gpu_load}
     RAM Load: {ram_load}
 
     </system_info>
