@@ -52,8 +52,10 @@ async def model(state: AgentState):
         "ram_load": get_ram_load(),
     }
 
+    code_tags_opened = False
+
     async for chunk in chain.astream(inputs):
-        await ui_response_message.stream_token(str(chunk.content))
+        await ui_response_message.stream_token(str(chunk.content) + "|")
 
     return {"messages": [AIMessage(content=ui_response_message.content)]}
 
