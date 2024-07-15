@@ -55,7 +55,7 @@ async def model(state: AgentState):
     code_tags_opened = False
 
     async for chunk in chain.astream(inputs):
-        await ui_response_message.stream_token(str(chunk.content) + "|")
+        await ui_response_message.stream_token(str(chunk.content))
 
     return {"messages": [AIMessage(content=ui_response_message.content)]}
 
