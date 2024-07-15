@@ -6,7 +6,7 @@ import chainlit as cl
 from langcode.jupyter import Jupyter
 
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
 from langchain_anthropic import ChatAnthropic
 from langgraph.graph import END, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -28,7 +28,7 @@ prompt = ChatPromptTemplate.from_messages(
     ]
 )
 
-
+# Recursion limit increase!
 async def model(state: AgentState):
     chain = prompt | ChatAnthropic(temperature=state["temperature"], model="claude-3-5-sonnet-20240620")  # type: ignore
 
@@ -64,30 +64,50 @@ async def executor(state: AgentState):
 
     for call in xml:
         if call.get("python", None):
-            async with cl.Step(name="Jupyter Notebook") as step:
-                step.input = call["python"]
-                result = jupyter.run_cell(call["python"], timeout=600000)
-                step.output = result.text
-
-            images = []
-
-            for image in result.images:
-                images.append(
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/{image.content_format};base64,{image.content}"
-                        },
-                    }
-                )
-
-            return {
-                "messages": [
-                    HumanMessage(
-                        content=[{"type": "text", "text": result.text}] + images
-                    )
+            res = await cl.AskActionMessage(
+                content="Execute code?",
+                actions=[
+                    cl.Action(name="execute", value="execute", label="Execute"),
+                    cl.Action(name="cancel", value="cancel", label="Cancel")
                 ]
-            }
+            ).send()
+
+            if res and res.get("value") == "execute":
+                async with cl.Step(name="Jupyter Notebook") as step:
+                    step.input = call["python"]
+                    result = jupyter.run_cell(call["python"], timeout=600000)
+                    step.output = result.text
+
+                images = []
+
+                for image in result.images:
+                    images.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/{image.content_format};base64,{image.content}"
+                            },
+                        }
+                    )
+
+                return {
+                    "messages": [
+                        ToolMessage(
+                            content=[{"type": "text", "text": result.text}] + images,
+                            tool_call_id="None"
+                        )
+                    ]
+                }
+            
+            else:
+                return {
+                    "messages": [
+                        ToolMessage(
+                            content="User has refused to run the code which you have submitted to execution, or timeout of user decision has elapsed.",
+                            tool_call_id="None"
+                        )
+                    ]
+                }
 
 
 def router(state: AgentState):
