@@ -1,4 +1,7 @@
+from dotenv import load_dotenv
 import chainlit as cl
+
+load_dotenv(".env")
 
 # On chat start: create a jupyter notebook.
 # On each message: determine agent info state, retrieve chat history, stream, update chat history.
