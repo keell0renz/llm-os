@@ -6,7 +6,7 @@ import chainlit as cl
 from langcode.jupyter import Jupyter
 
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.messages import BaseMessage, HumanMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_anthropic import ChatAnthropic
 from langgraph.graph import END, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -29,28 +29,33 @@ prompt = ChatPromptTemplate.from_messages(
 )
 
 
-def model(state: AgentState):
+async def model(state: AgentState):
     chain = prompt | ChatAnthropic(temperature=state["temperature"], model="claude-3-5-sonnet-20240620")  # type: ignore
 
-    response = chain.invoke(
-        {
-            "messages": state["messages"],
-            "os_uname_a": get_os_uname_a(),
-            "date": get_date(),
-            "time": get_time(),
-            "timezone": get_timezone(),
-            "country": get_country(),
-            "city": get_city(),
-            "username": get_username(),
-            "users_real_name": get_users_real_name(),
-            "users_email": get_users_email(),
-            "access_to_the_internet": get_access_to_the_internet(),
-            "cpu_load": get_cpu_load(),
-            "ram_load": get_ram_load(),
-        }
-    )
+    ui_response_message = cl.Message(content="")
 
-    return {"messages": [response]}
+    await ui_response_message.send()
+
+    inputs = {
+        "messages": state["messages"],
+        "os_uname_a": get_os_uname_a(),
+        "date": get_date(),
+        "time": get_time(),
+        "timezone": get_timezone(),
+        "country": get_country(),
+        "city": get_city(),
+        "username": get_username(),
+        "users_real_name": get_users_real_name(),
+        "users_email": get_users_email(),
+        "access_to_the_internet": get_access_to_the_internet(),
+        "cpu_load": get_cpu_load(),
+        "ram_load": get_ram_load(),
+    }
+
+    async for chunk in chain.astream(inputs):
+        await ui_response_message.stream_token(str(chunk.content))
+
+    return {"messages": [AIMessage(content=ui_response_message.content)]}
 
 
 async def executor(state: AgentState):

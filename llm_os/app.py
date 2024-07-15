@@ -37,20 +37,25 @@ async def main(message: cl.Message):
     messages: list[MessageLikeRepresentation] = cl.user_session.get("messages") # type: ignore
     runnable: CompiledGraph = cl.user_session.get("runnable") # type: ignore
 
+    messages.append(HumanMessage(content=message.content))
+
+    # response = cl.Message(content="")
+
     inputs = {
         "messages": messages,
         "temperature": 0.5,
     }
 
-    messages.append(HumanMessage(content=message.content))
+    # async for output in runnable.astream_log(inputs, include_types=["llm"]):
+    #     for op in output.ops:
+    #         if op["path"].startswith("/logs/") and op["path"].endswith(
+    #             "/streamed_output/-"
+    #         ):
+    #             # await response.stream_token(op["value"].content)
+    #             pass
 
-    response = cl.Message(content="")
+    # messages.append(AIMessage(content=response.content))
 
-    async for output in runnable.astream_log(inputs, include_types=["llm"]):
-        for op in output.ops:
-            if op["path"].startswith("/logs/") and op["path"].endswith(
-                "/streamed_output/-"
-            ):
-                await response.stream_token(op["value"].content)
+    final_state = await runnable.ainvoke(inputs)
 
-    messages.append(AIMessage(content=response.content))
+    cl.user_session.set("messages", final_state["messages"])
