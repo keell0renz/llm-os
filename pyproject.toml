@@ -8,6 +8,10 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 python-dotenv = "^1.0.1"
+psutil = "^6.0.0"
+langcode = "^0.1.4"
+langchain = "^0.2.7"
+langgraph = "^0.1.8"
 
 
 [build-system]
