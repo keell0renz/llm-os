@@ -6,7 +6,7 @@ import chainlit as cl
 from langcode.jupyter import Jupyter
 
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_anthropic import ChatAnthropic
 from langgraph.graph import END, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -32,6 +32,8 @@ prompt = ChatPromptTemplate.from_messages(
 async def model(state: AgentState):
     chain = prompt | ChatAnthropic(temperature=state["temperature"], model="claude-3-5-sonnet-20240620")  # type: ignore
 
+    result_text = ""
+
     ui_response_message = cl.Message(content="")
 
     await ui_response_message.send()
@@ -52,12 +54,11 @@ async def model(state: AgentState):
         "ram_load": get_ram_load(),
     }
 
-    code_tags_opened = False
-
     async for chunk in chain.astream(inputs):
+        result_text += str(chunk.content)
         await ui_response_message.stream_token(str(chunk.content))
 
-    return {"messages": [AIMessage(content=ui_response_message.content)]}
+    return {"messages": [AIMessage(content=result_text)]}
 
 
 async def executor(state: AgentState):
@@ -94,9 +95,8 @@ async def executor(state: AgentState):
 
                 return {
                     "messages": [
-                        ToolMessage(
-                            content=[{"type": "text", "text": result.text}] + images,
-                            tool_call_id="None"
+                        HumanMessage(
+                            content=[{"type": "text", "text": result.text}] + images
                         )
                     ]
                 }
@@ -104,9 +104,8 @@ async def executor(state: AgentState):
             else:
                 return {
                     "messages": [
-                        ToolMessage(
-                            content="User has refused to run the code which you have submitted to execution, or timeout of user decision has elapsed.",
-                            tool_call_id="None"
+                        HumanMessage(
+                            content="User has refused to run the code which you have submitted to execution, or timeout of user decision has elapsed. YOU MUST NOT TRY EXECUTE IT AGAIN WITHOUT USER's REQUEST. Do not apologize."
                         )
                     ]
                 }
