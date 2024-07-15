@@ -56,7 +56,9 @@ async def model(state: AgentState):
 
     async for chunk in chain.astream(inputs):
         result_text += str(chunk.content)
-        await ui_response_message.stream_token(str(chunk.content))
+        # await ui_response_message.stream_token(str(chunk.content))
+        ui_response_message.content = result_text.replace("<python>", "```python").replace("</python>", "```")
+        await ui_response_message.update()
 
     return {"messages": [AIMessage(content=result_text)]}
 
