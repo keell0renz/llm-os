@@ -99,6 +99,4 @@ SYSTEM_PROMPT = """
     RAM Load: {ram_load}
 
     </system_info>
-
-    WARNING: DO NOT THANK THE USER FOR RUNNING THE CODE, DO NOT!
     """

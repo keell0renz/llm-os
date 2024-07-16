@@ -1,5 +1,6 @@
 from typing import TypedDict, Annotated, Sequence
 import operator
+import os
 
 import chainlit as cl
 
@@ -22,11 +23,9 @@ class AgentState(TypedDict):
 
 
 prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", SYSTEM_PROMPT),
-        MessagesPlaceholder(variable_name="messages")
-    ]
+    [("system", SYSTEM_PROMPT), MessagesPlaceholder(variable_name="messages")]
 )
+
 
 # Recursion limit increase!
 async def model(state: AgentState):
@@ -57,7 +56,9 @@ async def model(state: AgentState):
     async for chunk in chain.astream(inputs):
         result_text += str(chunk.content)
         # await ui_response_message.stream_token(str(chunk.content))
-        ui_response_message.content = result_text.replace("<python>", "```python").replace("</python>", "```")
+        ui_response_message.content = result_text.replace(
+            "<python>", "```python"
+        ).replace("</python>", "```")
         await ui_response_message.update()
 
     return {"messages": [AIMessage(content=result_text)]}
@@ -67,17 +68,26 @@ async def executor(state: AgentState):
     xml = ToolParser.extract_and_parse_xml(state["messages"][-1].content)  # type: ignore
     jupyter: Jupyter = cl.user_session.get("jupyter")  # type: ignore
 
-    for call in xml:
-        if call.get("python", None):
-            res = await cl.AskActionMessage(
-                content="Execute code?",
-                actions=[
-                    cl.Action(name="execute", value="execute", label="Execute"),
-                    cl.Action(name="cancel", value="cancel", label="Cancel")
-                ]
-            ).send()
+    responses = []
 
-            if res and res.get("value") == "execute":
+    ask_for_code_execution = (
+        True if os.environ["ASK_FOR_CODE_EXECUTION"] == "True" else False
+    )
+
+    res = None
+
+    if ask_for_code_execution:
+        res = await cl.AskActionMessage(
+            content="Execute code?",
+            actions=[
+                cl.Action(name="execute", value="execute", label="Execute"),
+                cl.Action(name="cancel", value="cancel", label="Cancel"),
+            ],
+        ).send()
+
+    if (res and res.get("value", "") == "execute") or ask_for_code_execution == False:
+        for call in xml:
+            if call.get("python", None):
                 async with cl.Step(name="Jupyter Notebook") as step:
                     step.input = call["python"]
                     result = jupyter.run_cell(call["python"], timeout=600000)
@@ -95,22 +105,22 @@ async def executor(state: AgentState):
                         }
                     )
 
-                return {
-                    "messages": [
-                        HumanMessage(
-                            content=[{"type": "text", "text": result.text}] + images
-                        )
-                    ]
-                }
-            
-            else:
-                return {
-                    "messages": [
-                        HumanMessage(
-                            content="User has refused to run the code which you have submitted to execution, or timeout of user decision has elapsed. YOU MUST NOT TRY EXECUTE IT AGAIN WITHOUT USER's REQUEST. Do not apologize."
-                        )
-                    ]
-                }
+                responses.append(
+                    HumanMessage(
+                        content=[{"type": "text", "text": result.text}] + images
+                    )
+                )
+
+    else:
+        return {
+            "messages": [
+                HumanMessage(
+                    content="User has cancelled the execution, do not try to execute code again unless user asks so."
+                )
+            ]
+        }
+
+    return {"messages": responses}
 
 
 def router(state: AgentState):
