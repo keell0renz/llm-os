@@ -43,7 +43,7 @@ latex = false
 
 [UI]
 # Name of the app and chatbot.
-name = "Chatbot"
+name = "Code Agent"
 
 # Show the readme while the thread is empty.
 show_readme_as_default = true
