@@ -97,8 +97,8 @@ async def executor(state: AgentState):
                 ui_output_buffer = ""
 
                 for event in jupyter.stream_cell(call["python"], timeout=600000):
-                    if event.content_format in ["base64.png", "base64.jpeg"]:
-                        images.append(Base64ImageString(content_format=("png" if event.content_format == "base64.png" else "jpeg"), content=event.content))
+                    if event.content_format in ["base64/png", "base64/jpeg"]:
+                        images.append(Base64ImageString(content_format=("png" if event.content_format == "base64/png" else "jpeg"), content=event.content))
 
                         # TODO Display image.
                     else:
