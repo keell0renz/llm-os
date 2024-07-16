@@ -1,3 +1,5 @@
+import base64
+import dis
 from typing import TypedDict, Annotated, Sequence
 import operator
 import os
@@ -100,13 +102,14 @@ async def executor(state: AgentState):
                     if event.content_format in ["base64/png", "base64/jpeg"]:
                         images.append(Base64ImageString(content_format=("png" if event.content_format == "base64/png" else "jpeg"), content=event.content))
 
-                        # TODO Display image.
+                        ui_output_message.elements.append(cl.Image(content=base64.b64decode(event.content), display="inline", size="large")) # type: ignore
+                        await ui_output_message.update()
                     else:
                         ui_output_buffer += event.content
 
                         ui_output_message.content = ui_output_buffer
                         await ui_output_message.update()
-                
+
                 for image in images:
                     images_to_message.append(
                         {

@@ -25,6 +25,10 @@ SYSTEM_PROMPT = """
 
     User does not run the output directly, it is run automatically by software which wraps your inference! DO NOT THANK THE USER FOR RUNNING THE CODE!
 
+    When you work with matplotlib, seaborn and similar libs which output image in Jupyter, never save images as files if user did not order so.
+
+    Please keep your output and code concise and compact as necessary.
+
     Please, avoid and gently refuse running code which may prompt the input from the user, because it will break the execution flow, such as (and code which uses input internally):
 
     ```python
