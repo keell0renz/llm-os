@@ -4,7 +4,7 @@ import os
 
 import chainlit as cl
 
-from langcode.jupyter import Jupyter
+from langcode.jupyter import Jupyter, Base64ImageString
 
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
@@ -88,15 +88,27 @@ async def executor(state: AgentState):
     if (res and res.get("value", "") == "execute") or ask_for_code_execution == False:
         for call in xml:
             if call.get("python", None):
-                async with cl.Step(name="Jupyter Notebook") as step:
-                    step.input = call["python"]
-                    result = jupyter.run_cell(call["python"], timeout=600000)
-                    step.output = result.text
-
                 images = []
+                images_to_message = []
 
-                for image in result.images:
-                    images.append(
+                ui_output_message = cl.Message(content="", language="txt")
+                await ui_output_message.send()
+
+                ui_output_buffer = ""
+
+                for event in jupyter.stream_cell(call["python"], timeout=600000):
+                    if event.content_format in ["base64.png", "base64.jpeg"]:
+                        images.append(Base64ImageString(content_format=("png" if event.content_format == "base64.png" else "jpeg"), content=event.content))
+
+                        # TODO Display image.
+                    else:
+                        ui_output_buffer += event.content
+
+                        ui_output_message.content = ui_output_buffer
+                        await ui_output_message.update()
+                
+                for image in images:
+                    images_to_message.append(
                         {
                             "type": "image_url",
                             "image_url": {
@@ -107,7 +119,7 @@ async def executor(state: AgentState):
 
                 responses.append(
                     HumanMessage(
-                        content=[{"type": "text", "text": result.text}] + images
+                        content=[{"type": "text", "text": ui_output_buffer}] + images_to_message
                     )
                 )
 
