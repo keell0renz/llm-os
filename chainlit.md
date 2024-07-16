@@ -1,14 +1,5 @@
-# Welcome to Chainlit! 🚀🤖
+# Welcome to Code Agent v1
 
-Hi there, Developer! 👋 We're excited to have you on board. Chainlit is a powerful tool designed to help you prototype, debug and share applications built on top of LLMs.
+This agent, built with [LangCode](https://github.com/keell0renz/langcode), a developer-friendly API for interactive Python code execution, can execute Python code in a stateful Jupyter Notebook with full access to your system, The Internet, and output images generated inside Jupyter environment (ex. Matplotlib plot image).
 
-## Useful Links 🔗
-
-- **Documentation:** Get started with our comprehensive [Chainlit Documentation](https://docs.chainlit.io) 📚
-- **Discord Community:** Join our friendly [Chainlit Discord](https://discord.gg/k73SQ3FyUh) to ask questions, share your projects, and connect with other developers! 💬
-
-We can't wait to see what you create with Chainlit! Happy coding! 💻😊
-
-## Welcome screen
-
-To modify the welcome screen, edit the `chainlit.md` file at the root of your project. If you do not want a welcome screen, just leave this file empty.
+Please, set up `.env` file in the directory so agent knows additional details about you and your preferences.
