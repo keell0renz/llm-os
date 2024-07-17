@@ -1,5 +1,7 @@
 # LLM-OS: A conversational interface to your OS
 
+![Code Agent](codeagent.gif)
+
 ## Installation
 
 ### 1. Clone the repository
