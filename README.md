@@ -1,4 +1,4 @@
-# LLM-OS: A conversational interface to your OS
+# LLM-OS: A conversational interface to your local OS
 
 ![Code Agent](codeagent.gif)
 
