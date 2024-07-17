@@ -1,3 +1,4 @@
+from typing import Any, Literal, cast, List, Dict, Union
 from dotenv import load_dotenv
 import chainlit as cl
 
@@ -7,6 +8,7 @@ from langgraph.graph.graph import CompiledGraph
 from langcode.jupyter import Jupyter
 
 from model import create_state_graph
+from utils import image_to_base64
 
 load_dotenv(".env")
 
@@ -37,25 +39,28 @@ async def main(message: cl.Message):
     messages: list[MessageLikeRepresentation] = cl.user_session.get("messages") # type: ignore
     runnable: CompiledGraph = cl.user_session.get("runnable") # type: ignore
 
-    messages.append(HumanMessage(content=message.content))
+    images = [file for file in message.elements if file.mime and "image" in file.mime]
 
-    # response = cl.Message(content="")
+    content = [{"type": "text", "text": message.content}] + [
+        {
+            "type": "image_url",
+            "image_url": {
+                "url": f"data:image/jpeg;base64,{image_to_base64(file.path)}"
+            },
+        }
+        for file in images
+        if file.path
+    ]
 
-    inputs = {
-        "messages": messages,
-        "temperature": 0.5,
-    }
+    content = cast(List[Union[str, Dict]], content)
 
-    # async for output in runnable.astream_log(inputs, include_types=["llm"]):
-    #     for op in output.ops:
-    #         if op["path"].startswith("/logs/") and op["path"].endswith(
-    #             "/streamed_output/-"
-    #         ):
-    #             # await response.stream_token(op["value"].content)
-    #             pass
+    messages.append(HumanMessage(content=content))
 
-    # messages.append(AIMessage(content=response.content))
-
-    final_state = await runnable.ainvoke(inputs)
+    final_state = await runnable.ainvoke(
+        {
+            "messages": messages,
+            "temperature": 0.5,
+        }
+    )
 
     cl.user_session.set("messages", final_state["messages"])
